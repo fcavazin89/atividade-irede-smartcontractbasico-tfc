@@ -1,0 +1,97 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/**
+ * @title RegistroDeUsuariosComRecompensa
+ * @dev CONCEITOS FUNDAMENTAIS:
+ * * 1. O QUE É GAS: É a unidade de medida do esforço computacional necessário para executar 
+ * operações na rede Ethereum. Cada alteração no estado do contrato custa "gas" para evitar 
+ * spam e remunerar os validadores.
+ * * 2. COMO FUNCIONA A EVM: A Ethereum Virtual Machine é o ambiente de execução global onde 
+ * os Smart Contracts rodam. Ela garante que o código seja executado da mesma forma em 
+ * todos os nós da rede, de forma determinística.
+ * * 3. DIFERENÇA PARA CONTRATOS TRADICIONAIS: Diferente de contratos em papel, Smart Contracts 
+ * são imutáveis (não podem ser alterados após o deploy) e autoexecutáveis (não dependem 
+ * de um terceiro ou sistema jurídico para garantir o cumprimento das regras).
+ */
+
+contract RegistroDeUsuariosComRecompensa {
+
+    // 2. Definir a estrutura do contrato
+    struct Usuario {
+        string nome;
+        uint256 saldoTokens; // 5. Simulação de token (controle de saldo)
+        bool cadastrado;
+    }
+
+    // 2. Mapping para armazenar usuários por endereço de carteira
+    mapping(address => Usuario) public usuarios;
+    
+    // Endereço do administrador (segurança)
+    address public dono;
+
+    // 4. Implementar eventos
+    event UsuarioRegistrado(address indexed carteira, string nome);
+    event RecompensaEnviada(address indexed carteira, uint256 valor);
+
+    constructor() {
+        dono = msg.sender; // Define quem fez o deploy como o administrador
+    }
+
+    // 3. Função obrigatória: registrarUsuario
+    function registrarUsuario(string memory _nome) public {
+        // 6. Aplicar segurança: Evitar registros duplicados
+        require(!usuarios[msg.sender].cadastrado, "Usuario ja cadastrado nesta carteira.");
+        // Validação simples de nome
+        require(bytes(_nome).length > 0, "O nome nao pode estar vazio.");
+
+        usuarios[msg.sender] = Usuario({
+            nome: _nome,
+            saldoTokens: 0,
+            cadastrado: true
+        });
+
+        // 4. Emissão de evento
+        emit UsuarioRegistrado(msg.sender, _nome);
+    }
+
+    // 3. Função obrigatória: consultarUsuario (View não gasta gas se chamada externamente)
+    function consultarUsuario(address _carteira) public view returns (string memory nome, uint256 saldo) {
+        require(usuarios[_carteira].cadastrado, "Usuario nao encontrado.");
+        Usuario memory user = usuarios[_carteira];
+        return (user.nome, user.saldoTokens);
+    }
+
+    // 3 e 5. Função obrigatória: recompensarUsuario (Simulação de Token)
+    function recompensarUsuario(address _carteira, uint256 _quantidade) public {
+        // 6. Aplicar segurança: Apenas o dono pode distribuir recompensas
+        require(msg.sender == dono, "Apenas o dono do contrato pode dar recompensas.");
+        require(usuarios[_carteira].cadastrado, "A carteira de destino nao esta cadastrada.");
+
+        // Incrementa o saldo (simulação de token)
+        usuarios[_carteira].saldoTokens += _quantidade;
+
+        // 4. Emissão de evento
+        emit RecompensaEnviada(_carteira, _quantidade);
+    }
+
+    /**
+     * 8. CASO DE USO REAL:
+     * Este contrato pode ser aplicado em um sistema de "Fidelidade de Pequenos Negócios". 
+     * Onde clientes se registram em uma cafeteria (registrarUsuario) e, a cada compra 
+     * realizada, o dono do estabelecimento envia "pontos/tokens" (recompensarUsuario). 
+     * O cliente pode consultar seu saldo a qualquer momento de forma transparente 
+     * na blockchain.
+     */
+}
+
+Criação do Contrato
+https://eth-sepolia.blockscout.com/address/0xf723857190A6C6B1DF26C82590E91143a44bCF5c?tab=contract
+
+registrarUsuario
+https://eth-sepolia.blockscout.com/tx/0x3efe1a3bf7e10342caebf20ebdd8f77898ed8782d1caaaaacf321d7d7c33f4de
+
+
+recompensarUsuario
+https://eth-sepolia.blockscout.com/tx/0x2dbdb3ee731f3778bfee6fa83a4779eb3bcbe842fff51275b0db147f1ccb591c
+https://eth-sepolia.blockscout.com/address/0xf723857190A6C6B1DF26C82590E91143a44bCF5c?tab=contract
